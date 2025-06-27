@@ -7,13 +7,13 @@ final List<Map<String, String>> course = [
   },
   {
     'name': 'React',
-    'img': 'assets/react.png',
+    'img': 'assets/OIP.png',
     'route': '/react',
     'amount': '3499',
   },
   {
     'name': 'React-Native',
-    'img': 'assets/react.png',
+    'img': 'assets/OIP.png',
     'route': '/react-native',
     'amount': '4999',
   },
