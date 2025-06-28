@@ -11,16 +11,21 @@ class RegisterPage extends StatefulWidget {
   final String courseName;
   final String amount;
 
-  RegisterPage({required this.courseName, required this.amount});
+  const RegisterPage({
+    super.key,
+    required this.courseName,
+    required this.amount,
+  });
 
   @override
-  _RegisterPageState createState() => _RegisterPageState();
+  RegisterPageState createState() => RegisterPageState();
 }
 
-class _RegisterPageState extends State<RegisterPage> {
+class RegisterPageState extends State<RegisterPage> {
   final nameController = TextEditingController();
   final emailController = TextEditingController();
   final contactController = TextEditingController();
+  bool isProcessing = false;
 
   @override
   void dispose() {
@@ -30,45 +35,56 @@ class _RegisterPageState extends State<RegisterPage> {
     super.dispose();
   }
 
-  void _startPayment() {
-    if (nameController.text.isEmpty ||
-        emailController.text.isEmpty ||
-        contactController.text.isEmpty) {
+  Future<void> _startPayment() async {
+    await _submitToServer('not_paid');
+    final name = nameController.text.trim();
+    final email = emailController.text.trim();
+    final mobile = contactController.text.trim();
+
+    if (name.isEmpty || email.isEmpty || mobile.isEmpty) {
       _showDialog("Missing Fields", "Please fill all the fields.");
+      return;
+    }
+
+    if (!RegExp(r'^[\w\.-]+@[\w\.-]+\.\w{2,4}$').hasMatch(email)) {
+      _showDialog("Invalid Email", "Please enter a valid email.");
+      return;
+    }
+
+    if (!RegExp(r'^[6-9]\d{9}$').hasMatch(mobile)) {
+      _showDialog("Invalid Mobile", "Enter a valid 10-digit mobile number.");
       return;
     }
 
     final options = RazorpayOptions(
       key: 'rzp_test_EH1UEwLILEPXCj',
-      amount: int.parse(widget.amount) * 100, // Razorpay uses paise
+      amount: int.parse(widget.amount) * 100,
       currency: 'INR',
       name: 'Ramchin Technologies',
       description: '${widget.courseName} Course & Internship',
       image: '',
-      prefill: Prefill(
-        name: nameController.text,
-        email: emailController.text,
-        contact: contactController.text,
-      ),
+      prefill: Prefill(name: name, email: email, contact: mobile),
     );
 
     final razorpay = Razorpay(options);
 
     razorpay.on(
       'payment.success',
-      allowInterop((response) {
-        _submitToServer('paid');
-        _showDialog(
-          "Payment Successful",
-          "Payment ID: ${response['razorpay_payment_id']}",
-        );
+      allowInterop((response) async {
+        final success = await _submitToServer('paid');
+        if (success) {
+          _showDialog(
+            "Payment Successful",
+            "Payment ID: ${response['razorpay_payment_id']}",
+          );
+        }
       }),
     );
 
     razorpay.on(
       'payment.failed',
-      allowInterop((response) {
-        _submitToServer('not_paid');
+      allowInterop((response) async {
+        await _submitToServer('not_paid');
         _showDialog("Payment Failed", response['error']['description']);
       }),
     );
@@ -76,25 +92,49 @@ class _RegisterPageState extends State<RegisterPage> {
     razorpay.open();
   }
 
-  Future<void> _submitToServer(String status) async {
+  Future<bool> _submitToServer(String status) async {
+    setState(() => isProcessing = true);
+
     final url = Uri.parse(
       'https://ramchintech.com/school_attendance/register.php',
     );
 
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'name': nameController.text,
-        'email': emailController.text,
-        'mobile': contactController.text,
-        'courseName': widget.courseName,
-        'amount': int.parse(widget.amount),
-        'paymentStatus': status,
-      }),
-    );
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'name': nameController.text.trim(),
+          'email': emailController.text.trim(),
+          'mobile': contactController.text.trim(),
+          'courseName': widget.courseName,
+          'amount': widget.amount,
+          'paymentStatus': status,
+        }),
+      );
 
-    print("Server Response: ${response.body}");
+      final data = jsonDecode(response.body);
+      print(nameController.text);
+      print(emailController.text);
+      print(contactController.text);
+      print(widget.courseName);
+      print(widget.amount);
+      print(status);
+      print(data);
+      setState(() => isProcessing = false);
+
+      if (!data['success']) {
+        _showDialog("Server Error", data['message']);
+        return false;
+      }
+
+      return true;
+    } catch (e) {
+      setState(() => isProcessing = false);
+      _showDialog("Error", "Something went wrong. Please try again.");
+      print(e);
+      return false;
+    }
   }
 
   void _showDialog(String title, String message) {
@@ -156,15 +196,17 @@ class _RegisterPageState extends State<RegisterPage> {
             ),
             SizedBox(height: 30),
             ElevatedButton(
-              onPressed: _startPayment,
+              onPressed: isProcessing ? null : _startPayment,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue,
                 padding: EdgeInsets.symmetric(vertical: 14, horizontal: 30),
               ),
-              child: Text(
-                "Pay ₹${widget.amount}",
-                style: TextStyle(fontSize: 16),
-              ),
+              child: isProcessing
+                  ? CircularProgressIndicator(color: Colors.white)
+                  : Text(
+                      "Pay ₹${widget.amount}",
+                      style: TextStyle(fontSize: 16),
+                    ),
             ),
           ],
         ),

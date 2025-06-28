@@ -4,6 +4,8 @@ import 'package:ramchin_technologies_course/widgets/mobile_home.dart';
 import '../util.dart';
 
 class HomePage extends StatelessWidget {
+  const HomePage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

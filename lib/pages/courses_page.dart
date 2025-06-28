@@ -5,6 +5,8 @@ import '../widgets/course_card.dart';
 class CoursesPage extends StatelessWidget {
   final List<String> courses = ['Flutter', 'React', 'Angular'];
 
+  CoursesPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

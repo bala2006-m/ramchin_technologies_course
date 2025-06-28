@@ -16,6 +16,8 @@ void main() {
 }
 
 class RamchinApp extends StatelessWidget {
+  const RamchinApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(

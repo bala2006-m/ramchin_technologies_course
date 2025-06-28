@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class CourseCard extends StatelessWidget {
   final String title;
 
-  CourseCard({required this.title});
+  const CourseCard({super.key, required this.title});
 
   @override
   Widget build(BuildContext context) {

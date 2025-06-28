@@ -1,5 +1,5 @@
 @JS()
-library razorpay_web;
+library;
 
 import 'package:js/js.dart';
 

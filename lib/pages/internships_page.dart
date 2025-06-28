@@ -5,6 +5,8 @@ import '../widgets/course_card.dart';
 class InternshipsPage extends StatelessWidget {
   final List<String> internships = ['Flutter', 'React'];
 
+  InternshipsPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
